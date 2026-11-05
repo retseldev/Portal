@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Register | PLES</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script type="module" src="forms.js"></script>
+  </head>
+  <body>
+    <main class="auth-shell">
+      <aside class="auth-aside">
+        <a class="brand" href="index.html" aria-label="PLES home"><img class="school-logo" src="school-logo.png" alt="" /><span>PLES</span></a>
+        <div>
+          <p class="eyebrow">Learn together</p>
+          <h1>A little help can go a long way.</h1>
+          <p>Join your school community with an account for your role.</p>
+        </div>
+        <p class="aside-foot">For preschool and elementary communities</p>
+      </aside>
+      <section class="auth-main">
+        <div class="auth-card">
+          <div class="auth-topline"><a href="index.html">← Back to home</a><a class="brand auth-brand" href="index.html" aria-label="PLES home"><img class="school-logo" src="school-logo.png" alt="" /><span>PLES</span></a></div>
+          <h2 id="form-title">Create your account</h2>
+          <p class="intro" id="form-intro">Create a portal account.</p>
+          <form class="demo-form" id="account-form" data-mode="register">
+            <input id="account-role" name="role" type="hidden" />
+            <label for="register-name">Your name</label>
+            <input id="register-name" name="name" type="text" autocomplete="name" placeholder="Your full name" minlength="2" required />
+            <label for="register-email">Email address</label>
+            <input id="register-email" name="email" type="email" autocomplete="email" placeholder="you@school.edu" required />
+            <div class="role-fields" id="student-fields" hidden>
+              <label for="student-id">Student ID</label>
+              <input id="student-id" name="studentId" autocomplete="off" placeholder="Your school-issued student ID" minlength="3" />
+              <label for="student-photo">Upload 2x2 Photo (required)</label>
+              <input id="student-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" />
+              <p class="field-help">Choose a clear, square profile photo. It will only appear inside the parent and teacher portals.</p>
+            </div>
+            <div class="role-fields" id="parent-fields" hidden>
+              <label for="child-name">Child’s full name</label>
+              <input id="child-name" name="childName" autocomplete="off" placeholder="Your child’s full name" minlength="2" />
+              <label for="child-id">Child’s Student ID</label>
+              <input id="child-id" name="childId" autocomplete="off" placeholder="Your child’s student ID" minlength="3" />
+              <label for="child-link-code">Child’s parent link code</label>
+              <input id="child-link-code" name="childLinkCode" autocomplete="off" placeholder="Private code from your child" minlength="12" />
+              <p class="field-help">Enter the student’s exact name and ID, plus the private parent link code shared from their school account.</p>
+            </div>
+            <label for="register-password">Create a password</label>
+            <div class="password-field">
+              <input id="register-password" name="password" type="password" autocomplete="new-password" placeholder="At least 8 characters" minlength="8" required />
+              <button class="password-toggle" type="button" aria-label="Show password" aria-pressed="false" aria-controls="register-password">
+                <svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></svg>
+                <svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8" /><path d="M9.9 5.2A10.7 10.7 0 0 1 12 5c6.4 0 10 7 10 7a15 15 0 0 1-3.1 3.8M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7a10 10 0 0 0 4-.8" /></svg>
+              </button>
+            </div>
+            <button class="submit-button" id="submit-label" type="submit">Create account</button>
+            <p class="form-success" role="status" hidden></p>
+          </form>
+          <p class="footnote">Once configured, accounts are saved in the school's Supabase project. Student profile photos are stored in its private photo bucket.</p>
+          <nav class="auth-links">
+            <a id="login-link" href="login.html?role=teacher">Already have an account? Log in</a>
+          </nav>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
