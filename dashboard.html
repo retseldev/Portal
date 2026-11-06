@@ -50,7 +50,7 @@
         </header>
 
         <main class="content">
-          <p class="demo-banner" role="note">Demo limitation: sign-in and account profiles use Supabase, but attendance, schedules, student photos in dashboard views, events, and other portal records still use this browser. Do not enter real student data.</p>
+          <p class="demo-banner" role="note">Demo limitation: sign-in and account profiles use Supabase, but attendance, student photos in dashboard views, events, and other portal records still use this browser. Do not enter real student data.</p>
           <section class="panel notification-panel" id="notification-panel" hidden>
             <div class="panel-heading"><div><h3>Notifications</h3><p>Recent updates for your portal</p></div><button id="close-notifications" class="link-btn" type="button">Close</button></div>
             <div id="notification-list" class="event-list"></div>
@@ -63,9 +63,7 @@
             </div>
             <div class="quick-grid">
               <a class="quick-card" href="#advising"><span class="quick-icon">✦</span><strong>Advising requests</strong><span id="pending-count">Review pending requests</span></a>
-              <a class="quick-card" href="#tutors"><span class="quick-icon">◎</span><strong>Tutor management</strong><span>Manage peer tutor availability</span></a>
               <a class="quick-card" href="#attendance"><span class="quick-icon">✓</span><strong>Attendance</strong><span>Record today’s attendance</span></a>
-              <a class="quick-card" href="#sessions"><span class="quick-icon">◷</span><strong>Study schedules</strong><span>Plan upcoming sessions</span></a>
             </div>
             <h3>Connected students</h3>
             <div class="student-grid" id="teacher-students"></div>
@@ -82,29 +80,6 @@
             <h2>Academic advising</h2>
             <p class="lead">Review and accept appointment requests from your connected school community.</p>
             <div id="advising-requests" class="list"></div>
-          </section>
-
-          <section id="sessions" class="view" hidden>
-            <div class="section-heading"><div><h2>Study session scheduling</h2><p class="lead">Plan study sessions and review the schedule.</p></div></div>
-            <form id="session-form" class="card form-row">
-              <label>Subject<select name="subject" required><option>Reading</option><option>Math</option><option>Science</option><option>Writing</option></select></label>
-              <label>Date<input name="date" type="date" required /></label>
-              <label>Time<input name="time" type="time" required /></label>
-              <label>Topic<input name="topic" minlength="2" required /></label>
-              <button class="btn" type="submit">Schedule session</button>
-            </form>
-            <div class="schedule-shortcut"><strong>Quick access:</strong> <a href="#attendance">Attendance</a> <a href="#events">School calendar</a></div>
-            <ul id="session-list" class="list"></ul>
-          </section>
-
-          <section id="tutors" class="view" hidden>
-            <h2>Tutor management</h2><p class="lead">Manage peer tutors and their availability.</p>
-            <form id="tutor-form" class="card form-row">
-              <label>Tutor name<input name="name" autocomplete="off" minlength="2" required /></label>
-              <label>Subject<select name="subject"><option>Reading</option><option>Math</option><option>Science</option><option>Writing</option></select></label>
-              <button class="btn" type="submit">Add tutor</button>
-            </form>
-            <ul id="tutor-list" class="list"></ul>
           </section>
 
           <section id="attendance" class="view" hidden>
@@ -134,13 +109,12 @@
                 <button class="btn" type="submit">Send request</button>
               </form>
             </section>
-            <section class="panel"><div class="panel-heading"><div><h3>Upcoming events &amp; schedules</h3><p>Only updates for your linked child</p></div></div><div id="parent-events" class="event-list"></div></section>
+            <section class="panel"><div class="panel-heading"><div><h3>Upcoming events</h3><p>Only updates for your linked child</p></div></div><div id="parent-events" class="event-list"></div></section>
           </section>
 
           <section id="student" class="view" hidden>
-            <h2>Student portal</h2><p class="lead">Your schedule, attendance and school updates.</p>
+            <h2>Student portal</h2><p class="lead">Your attendance and school updates.</p>
             <div class="quick-grid">
-              <a class="quick-card" href="#sessions"><span class="quick-icon">◷</span><strong>Study schedule</strong><span>See upcoming sessions</span></a>
               <a class="quick-card" href="#advising"><span class="quick-icon">✦</span><strong>Academic advising</strong><span>Check appointment requests</span></a>
               <a class="quick-card" href="#events"><span class="quick-icon">▦</span><strong>School calendar</strong><span>View events and announcements</span></a>
             </div>

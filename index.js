@@ -1,4 +1,3 @@
-const db = window.pleDb;
 const feedbackForm = document.querySelector("#feedback-form");
 const note = document.querySelector("#feedback-confirmation");
 
@@ -12,23 +11,36 @@ if (feedbackForm && note) {
   feedbackForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!feedbackForm.reportValidity()) return;
-    if (!db) return say("Feedback can't be sent yet because the database isn't connected.", false);
 
     const f = new FormData(feedbackForm);
     const button = feedbackForm.querySelector("button");
     button.disabled = true;
 
-    const { error } = await db.from("feedback").insert({
-      name: String(f.get("name") || "").trim() || null,
-      role: f.get("role"),
-      message: String(f.get("feedback") || "").trim(),
-    });
+    try {
+      const { supabase } = await import("./supabase-client.js");
+      if (!supabase) {
+        return say("Feedback can't be sent yet because the database isn't connected.", false);
+      }
 
-    button.disabled = false;
-    if (error) return say("We couldn't send your feedback. Try again in a moment.", false);
+      const { error } = await supabase.from("feedback").insert({
+        name: String(f.get("name") || "").trim() || null,
+        role: f.get("role"),
+        message: String(f.get("feedback") || "").trim(),
+      });
 
-    feedbackForm.reset();
-    say("Thanks. Your feedback was sent.", true);
+      if (error) {
+        console.error("Unable to send school feedback.", error);
+        return say("We couldn't send your feedback. Try again in a moment.", false);
+      }
+
+      feedbackForm.reset();
+      say("Thanks. Your feedback was sent.", true);
+    } catch (error) {
+      console.error("Unable to send school feedback.", error);
+      say("We couldn't send your feedback. Check your connection and try again.", false);
+    } finally {
+      button.disabled = false;
+    }
   });
 
   feedbackForm.addEventListener("input", () => { note.hidden = true; });
