@@ -235,7 +235,79 @@ if (accountForm) {
   }
 }
 
-document.querySelectorAll("form.demo-form:not(#account-form)").forEach((form) => {
+const passwordRequestForm = document.querySelector("#password-request-form");
+const passwordUpdateForm = document.querySelector("#password-update-form");
+
+function showPasswordUpdateForm() {
+  if (!passwordRequestForm || !passwordUpdateForm) return;
+  document.querySelector("#password-request-panel").hidden = true;
+  document.querySelector("#password-update-panel").hidden = false;
+}
+
+if (passwordRequestForm && passwordUpdateForm) {
+  const showRecoveryFormFromHash = () => {
+    const recoveryType = new URLSearchParams(window.location.hash.slice(1)).get("type");
+    if (recoveryType === "recovery") showPasswordUpdateForm();
+  };
+  showRecoveryFormFromHash();
+  window.addEventListener("hashchange", showRecoveryFormFromHash);
+
+  if (supabase) {
+    supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") showPasswordUpdateForm();
+    });
+
+    passwordRequestForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!passwordRequestForm.reportValidity()) return;
+      const notice = passwordRequestForm.querySelector(".form-success");
+      if (notice) notice.hidden = true;
+      const button = passwordRequestForm.querySelector(".submit-button");
+      button.disabled = true;
+
+      try {
+        const email = String(new FormData(passwordRequestForm).get("email")).trim().toLowerCase();
+        const redirectTo = new URL("forgot-password.html", window.location.href).href;
+        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+        if (error) throw error;
+        setSuccess(passwordRequestForm, "If an account exists for that email, a password reset link has been sent.");
+      } catch (error) {
+        console.error("Unable to request a password reset.", error);
+        setSuccess(passwordRequestForm, error.message || "We couldn't send a reset link. Please try again.", true);
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    passwordUpdateForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!passwordUpdateForm.reportValidity()) return;
+      const notice = passwordUpdateForm.querySelector(".form-success");
+      if (notice) notice.hidden = true;
+      const button = passwordUpdateForm.querySelector(".submit-button");
+      button.disabled = true;
+
+      try {
+        const password = String(new FormData(passwordUpdateForm).get("password"));
+        const { error } = await supabase.auth.updateUser({ password });
+        if (error) throw error;
+        passwordUpdateForm.reset();
+        setSuccess(passwordUpdateForm, "Your password has been updated. You can now log in with your new password.");
+      } catch (error) {
+        console.error("Unable to update the account password.", error);
+        setSuccess(passwordUpdateForm, error.message || "We couldn't update your password. Request a new reset link and try again.", true);
+      } finally {
+        button.disabled = false;
+      }
+    });
+  } else {
+    setSuccess(passwordRequestForm, "Online account storage is not configured. Add your Supabase project URL and publishable anon key to supabase-config.js.", true);
+    passwordRequestForm.querySelector(".submit-button").disabled = true;
+    passwordUpdateForm.querySelector(".submit-button").disabled = true;
+  }
+}
+
+document.querySelectorAll("form.demo-form:not(#account-form):not(#password-request-form):not(#password-update-form)").forEach((form) => {
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     if (!form.reportValidity()) return;

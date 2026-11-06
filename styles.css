@@ -1,12 +1,12 @@
 :root {
   font-family: "Nunito", Arial, sans-serif;
-  color: #17324d;
-  background: #f1f8f6;
-  --navy: #17324d;
-  --teal: #167f8a;
-  --yellow: #ffc93c;
-  --paper: #fffdf8;
-  --muted: #627487;
+  color: #174b35;
+  background: #f5fbf6;
+  --navy: #174b35;
+  --teal: #25834d;
+  --yellow: #ffe16b;
+  --paper: #fbfffc;
+  --muted: #5d786a;
 }
 
 * {
@@ -42,7 +42,7 @@ a:hover {
   justify-content: space-between;
   padding: 34px clamp(28px, 5vw, 72px);
   color: white;
-  background: linear-gradient(145deg, #123657, #167f8a);
+  background: linear-gradient(145deg, #23844d, #67bd70);
 }
 
 .brand {
@@ -99,7 +99,7 @@ a:hover {
   border: 1px solid #dfe8e8;
   border-radius: 24px;
   background: var(--paper);
-  box-shadow: 0 18px 50px #17324d14;
+  box-shadow: 0 18px 50px #174b3514;
 }
 
 .school-card {
@@ -200,11 +200,11 @@ select {
 
 .password-toggle:hover {
   color: var(--navy);
-  background: #edf4f3;
+  background: #e7f6eb;
 }
 
 .password-toggle:focus-visible {
-  outline: 3px solid #35b6c0;
+  outline: 3px solid #53b96c;
   outline-offset: 1px;
 }
 
@@ -229,14 +229,14 @@ select {
 
 input::placeholder,
 textarea::placeholder {
-  color: #627487;
+  color: #5d786a;
   opacity: .52;
 }
 
 input:focus,
 select:focus {
   border-color: var(--teal);
-  outline: 3px solid #35b6c044;
+  outline: 3px solid #53b96c44;
 }
 
 .submit-button {
@@ -252,7 +252,7 @@ select:focus {
 }
 
 .submit-button:hover {
-  background: #126d76;
+  background: #1b7041;
 }
 
 .submit-button:disabled {
@@ -264,7 +264,7 @@ select:focus {
   padding: 12px;
   border-radius: 10px;
   color: #145a48;
-  background: #d9f4e8;
+  background: #e0f5e6;
   line-height: 1.5;
 }
 

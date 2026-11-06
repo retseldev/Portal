@@ -82,12 +82,12 @@ let linkedStudent = role === "parent"
 const labels = { present: "Present", late: "Late", absent: "Absent" };
 const navItems = {
   teacher: [
-    ["teacher-home", "Dashboard"], ["advising", "Advising"], ["sessions", "Schedules"],
-    ["tutors", "Tutors"], ["attendance", "Attendance"], ["events", "Events"],
+    ["teacher-home", "Dashboard"], ["advising", "Advising"], ["attendance", "Attendance"],
+    ["events", "Events"],
     ["admin", "Admin tools"],
   ],
   parent: [["parent", "Guardian Stays"], ["events", "School events"]],
-  student: [["student", "My portal"], ["sessions", "Schedules"], ["advising", "Advising"], ["events", "Events"]],
+  student: [["student", "My portal"], ["advising", "Advising"], ["events", "Events"]],
 };
 const nav = $("#nav");
 nav.innerHTML = navItems[role].map(([id, label]) => `
@@ -97,8 +97,6 @@ nav.innerHTML = navItems[role].map(([id, label]) => `
 let currentStudentId = role === "parent" ? linkedStudent?.id : user.studentId;
 const events = load("lw-school-posts", []);
 const requests = load("lw-advising-requests", []);
-const sessions = load("lw-sessions", []);
-const tutors = load("lw-tutors", []);
 const attendance = load("lw-attendance", {});
 
 function initials(name) {
@@ -193,84 +191,6 @@ $("#advising-requests").addEventListener("click", (event) => {
   renderNotifications();
 });
 
-function renderSessions() {
-  const visible = role === "teacher"
-    ? sessions
-    : sessions.filter((session) => session.studentId === currentStudentId);
-  $("#session-list").innerHTML = visible.length
-    ? visible.map((session) => `<li><div><strong>${esc(session.subject)}: ${esc(session.topic)}</strong><span>${esc(session.when)}${session.studentName ? ` · ${esc(session.studentName)}` : ""}</span></div>${role === "teacher" ? `<button class="link-btn" data-delete-session="${esc(session.id)}" type="button">Remove</button>` : ""}</li>`).join("")
-    : `<li class="empty">${role === "teacher" ? "No study sessions scheduled. Add one above." : "No study sessions are scheduled for you."}</li>`;
-}
-
-function fillStudentOptions() {
-  const select = $("#session-student");
-  if (!select) return;
-  select.innerHTML = students.length
-    ? students.map((student) => `<option value="${esc(student.id)}">${esc(student.name)}</option>`).join("")
-    : `<option value="">No connected students</option>`;
-}
-
-$("#session-form").addEventListener("submit", (event) => {
-  event.preventDefault();
-  if (role !== "teacher") return;
-  const form = event.currentTarget;
-  if (!form.reportValidity()) return;
-  const data = new FormData(form);
-  const student = students.find((item) => item.id === data.get("studentId"));
-  const date = String(data.get("date"));
-  const when = new Date(`${date}T${data.get("time")}`).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-  sessions.push({
-    id: crypto.randomUUID(),
-    studentId: student?.id || "",
-    studentName: student?.name || "",
-    subject: String(data.get("subject")),
-    topic: String(data.get("topic")).trim(),
-    when,
-  });
-  save("lw-sessions", sessions);
-  form.reset();
-  fillStudentOptions();
-  renderSessions();
-  renderNotifications();
-});
-
-$("#session-list").addEventListener("click", (event) => {
-  const button = event.target.closest("[data-delete-session]");
-  if (!button || role !== "teacher") return;
-  const index = sessions.findIndex((session) => session.id === button.dataset.deleteSession);
-  if (index >= 0) sessions.splice(index, 1);
-  save("lw-sessions", sessions);
-  renderSessions();
-});
-
-function renderTutors() {
-  $("#tutor-list").innerHTML = tutors.length
-    ? tutors.map((tutor, index) => `<li><div><strong>${esc(tutor.name)}</strong><span>${esc(tutor.subject)}</span></div><span><button class="pill ${tutor.available ? "on" : "off"}" data-toggle-tutor="${index}" aria-pressed="${tutor.available}" type="button">${tutor.available ? "Available" : "On break"}</button> <button class="link-btn" data-remove-tutor="${index}" type="button">Remove</button></span></li>`).join("")
-    : `<li class="empty">No tutors yet. Add one above.</li>`;
-}
-
-$("#tutor-form").addEventListener("submit", (event) => {
-  event.preventDefault();
-  if (role !== "teacher") return;
-  const form = event.currentTarget;
-  if (!form.reportValidity()) return;
-  const data = new FormData(form);
-  tutors.push({ name: String(data.get("name")).trim(), subject: String(data.get("subject")), available: true });
-  save("lw-tutors", tutors);
-  form.reset();
-  renderTutors();
-});
-
-$("#tutor-list").addEventListener("click", (event) => {
-  if (role !== "teacher") return;
-  const button = event.target.closest("[data-toggle-tutor], [data-remove-tutor]");
-  if (!button) return;
-  if (button.dataset.toggleTutor !== undefined) tutors[button.dataset.toggleTutor].available = !tutors[button.dataset.toggleTutor].available;
-  else tutors.splice(Number(button.dataset.removeTutor), 1);
-  save("lw-tutors", tutors);
-  renderTutors();
-});
-
 function studentAttendance(semester, studentId) {
   const records = attendance[semester] || {};
   const dates = Object.keys(records).sort().reverse();
@@ -323,7 +243,7 @@ function renderParent() {
     $("#week").innerHTML = `<li class="empty">No child attendance to display.</li>`;
     $("#academic-standing").textContent = "No academic record is available yet.";
     $("#teacher-feedback").textContent = "Teacher feedback will appear here when shared.";
-    $("#parent-events").innerHTML = `<p class="empty-state">Child-specific events and schedules will appear after linking.</p>`;
+    $("#parent-events").innerHTML = `<p class="empty-state">Child-specific events will appear after linking.</p>`;
     return;
   }
   $("#parent-child").innerHTML = `${photoMarkup(linkedStudent, "child-photo")}<div class="child-copy"><span class="eyebrow">Linked student</span><h3>${esc(linkedStudent.name)}</h3><p>Student ID · ${esc(linkedStudent.id)}</p><span class="student-tag">Pulang Lupa Elementary School</span></div>`;
@@ -341,15 +261,10 @@ function renderParent() {
     : `<li class="empty">No attendance records for this semester.</li>`;
   $("#academic-standing").textContent = linkedStudent.standing || "No academic standing has been shared yet.";
   $("#teacher-feedback").textContent = linkedStudent.feedback || "Your teacher has not shared feedback yet.";
-  const childSessions = sessions.filter((session) => session.studentId === linkedStudent.id);
   const childPosts = events.filter((post) => !post.studentId || post.studentId === linkedStudent.id);
-  const combined = [
-    ...childSessions.map((session) => ({ type: "event", title: `${session.subject}: ${session.topic}`, details: session.when })),
-    ...childPosts,
-  ];
-  $("#parent-events").innerHTML = combined.length
-    ? combined.map(eventMarkup).join("")
-    : `<p class="empty-state">No upcoming events or schedules for your child.</p>`;
+  $("#parent-events").innerHTML = childPosts.length
+    ? childPosts.map(eventMarkup).join("")
+    : `<p class="empty-state">No upcoming events for your child.</p>`;
 }
 $("#parent-semester").addEventListener("change", renderParent);
 $("#parent-child").addEventListener("submit", (event) => {
@@ -501,23 +416,18 @@ $("#hello").textContent = `${hour < 12 ? "Good morning" : hour < 18 ? "Good afte
 $("#today").textContent = new Date().toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" });
 $("#role-label").textContent = role === "parent" ? "Parent portal" : role === "student" ? "Student portal" : "Teacher workspace";
 if (role === "teacher") {
-  $("#session-form").insertAdjacentHTML("afterbegin", `<label>Student<select id="session-student" name="studentId" required></select></label>`);
   renderConnectedStudents();
   renderAttendance();
-  renderTutors();
-  fillStudentOptions();
 }
 if (role === "parent") {
   $("#parent-advising-form").closest(".panel").hidden = !linkedStudent;
 }
 if (role === "student") {
-  $("#session-form").hidden = true;
   $("#student-advising-form").closest(".panel").hidden = !students.some((student) => student.id === currentStudentId);
   $("#student-link-panel").hidden = !user.linkCode;
   if (user.linkCode) $("#student-link-code").textContent = user.linkCode;
 }
 renderAdvising();
-renderSessions();
 renderParent();
 renderStudent();
 renderEvents();

@@ -1,17 +1,17 @@
 :root {
   color-scheme: light;
   font-family: "Nunito", sans-serif;
-  color: #17324d;
-  background: #fffdf8;
+  color: #174b35;
+  background: #fbfffc;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --navy: #17324d;
-  --teal: #167f8a;
-  --mint: #d9f4e8;
-  --yellow: #ffc93c;
-  --coral: #ffe2d8;
-  --muted: #627487;
-  --paper: #fffdf8;
+  --navy: #174b35;
+  --teal: #25834d;
+  --mint: #e0f5e6;
+  --yellow: #ffe16b;
+  --coral: #ffe5df;
+  --muted: #5d786a;
+  --paper: #fbfffc;
 }
 
 * {
@@ -58,7 +58,7 @@ a {
   position: relative;
   isolation: isolate;
   color: #fff;
-  background: linear-gradient(130deg, #123657, #167f8a);
+  background: linear-gradient(130deg, #23844d, #67bd70);
 }
 
 .hero-waves {
@@ -169,7 +169,7 @@ a {
   border-radius: 18px;
   color: var(--navy);
   background: #fff;
-  box-shadow: 0 18px 45px #102a4040;
+  box-shadow: 0 18px 45px #174b3540;
 }
 
 .site-menu[hidden] { display: none; }
@@ -199,8 +199,8 @@ a {
 }
 
 .menu-section a:hover {
-  color: #12626b;
-  background: #e8f7f5;
+  color: #1b7041;
+  background: #e7f6eb;
 }
 
 .button {
@@ -296,7 +296,7 @@ h1 {
   border: 1px solid #dfe8e8;
   border-radius: 22px;
   background: #fff;
-  box-shadow: 0 14px 40px #17324d12;
+  box-shadow: 0 14px 40px #174b3512;
 }
 
 .preview-card {
@@ -364,7 +364,7 @@ h1 {
 }
 
 .coral {
-  background: var(--coral);
+  background: var(--mint);
 }
 
 .cloud-sync {
@@ -374,8 +374,8 @@ h1 {
   margin-top: 13px;
   padding: 12px;
   border-radius: 12px;
-  color: #12626b;
-  background: #e8f7f5;
+  color: #1b7041;
+  background: #e7f6eb;
   font-size: .9rem;
   font-weight: 800;
 }
@@ -417,6 +417,10 @@ h1 {
   margin-top: 34px;
 }
 
+.feature-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .feature-card,
 .step {
   padding: 25px;
@@ -438,7 +442,7 @@ h1 {
 }
 
 .how-section {
-  background: #f0f8f6;
+  background: #eff9f1;
 }
 
 .step-number {
@@ -490,7 +494,7 @@ h1 {
 }
 
 .updates-section {
-  background: #f0f8f6;
+  background: #eff9f1;
 }
 
 .public-updates {
@@ -507,7 +511,7 @@ h1 {
   border: 1px solid #dfe8e8;
   border-radius: 16px;
   background: white;
-  box-shadow: 0 10px 24px #17324d0c;
+  box-shadow: 0 10px 24px #174b350c;
 }
 
 .public-update-type {
@@ -528,11 +532,11 @@ h1 {
 }
 
 .login-choice {
-  background: #f1fbf7;
+  background: #edf8ef;
 }
 
 .register-choice {
-  background: #fff8df;
+  background: #f5fbf4;
 }
 
 .device-band {
@@ -562,7 +566,7 @@ h1 {
 }
 
 .feedback-section {
-  background: #f7faf9;
+  background: #f5fbf6;
 }
 
 .feedback-layout {
@@ -596,7 +600,7 @@ h1 {
 
 input::placeholder,
 textarea::placeholder {
-  color: #627487;
+  color: #5d786a;
   opacity: .52;
 }
 
@@ -607,7 +611,7 @@ textarea::placeholder {
 .feedback-form :focus-visible,
 a:focus-visible,
 button:focus-visible {
-  outline: 3px solid #35b6c0;
+  outline: 3px solid #53b96c;
   outline-offset: 3px;
 }
 
@@ -629,10 +633,15 @@ button:focus-visible {
   display: none;
 }
 
+.local-confirmation.is-error {
+  color: #8a3a22;
+  background: var(--coral);
+}
+
 .site-footer {
   padding: 24px 0;
   color: #fff;
-  background: #102a40;
+  background: #174b35;
 }
 
 .footer-content {
@@ -769,8 +778,8 @@ button:focus-visible {
     border: 1px solid #ffffff50;
     border-radius: 18px;
     color: #fff;
-    background: #17324df2;
-    box-shadow: 0 8px 28px #102a4040;
+    background: #174b35f2;
+    box-shadow: 0 8px 28px #174b3540;
     backdrop-filter: blur(12px);
   }
 
