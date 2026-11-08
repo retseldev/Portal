@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="PLES connects preschool and elementary schools with attendance and academic advising tools."
+      content="PLES is the school portal for attendance, advising, student study support, school events and parent help."
     />
     <title>PLES — School tools in sync</title>
 
@@ -89,16 +89,36 @@
                 <a href="#feedback">Feedback</a>
               </div>
               <div class="menu-section">
-                <span class="menu-heading">Log in</span>
-                <a href="login.html?role=teacher">Log in as Teacher</a>
-                <a href="login.html?role=parent">Log in as Parent</a>
-                <a href="login.html?role=student">Log in as Student</a>
+                <button
+                  class="menu-heading menu-dropdown-toggle"
+                  id="login-menu-toggle"
+                  type="button"
+                  aria-expanded="false"
+                  aria-controls="login-menu-options"
+                >
+                  <span>Log in</span><span class="menu-chevron" aria-hidden="true">⌄</span>
+                </button>
+                <div class="menu-options" id="login-menu-options" hidden>
+                  <a href="login.html?role=teacher">Log in as Teacher</a>
+                  <a href="login.html?role=parent">Log in as Parent</a>
+                  <a href="login.html?role=student">Log in as Student</a>
+                </div>
               </div>
               <div class="menu-section">
-                <span class="menu-heading">Register</span>
-                <a href="register.html?role=teacher">Register as Teacher</a>
-                <a href="register.html?role=parent">Register as Parent</a>
-                <a href="register.html?role=student">Register as Student</a>
+                <button
+                  class="menu-heading menu-dropdown-toggle"
+                  id="register-menu-toggle"
+                  type="button"
+                  aria-expanded="false"
+                  aria-controls="register-menu-options"
+                >
+                  <span>Register</span><span class="menu-chevron" aria-hidden="true">⌄</span>
+                </button>
+                <div class="menu-options" id="register-menu-options" hidden>
+                  <a href="register.html?role=teacher">Register as Teacher</a>
+                  <a href="register.html?role=parent">Register as Parent</a>
+                  <a href="register.html?role=student">Register as Student</a>
+                </div>
               </div>
             </div>
           </nav>
@@ -107,23 +127,24 @@
             <div class="hero-copy">
               <span class="eyebrow">Pulang Lupa Elementary School</span>
               <h1>
-                Attendance and advising in one connected system.
+                A brighter school day starts here.
               </h1>
               <p>
-                A school portal that helps teachers, parents and young learners
-                stay informed about attendance, advising and school events.
+                One welcoming place for students, parents and teachers to find
+                school updates, attendance, advising and learning support.
               </p>
 
               <div class="hero-actions">
-                <button class="button button-yellow" type="button" data-open-menu>
-                  Log in or register
+                <a class="button button-yellow" href="#portals">Choose your portal</a>
+                <button class="button button-outline" type="button" data-open-menu>
+                  Log in
                 </button>
               </div>
             </div>
 
-            <div class="preview-card" aria-label="Example school day dashboard">
-              <div class="preview-heading">Good morning</div>
-              <div class="preview-subtitle">Your school day at a glance</div>
+            <div class="preview-card" aria-label="PLES school portal features">
+              <div class="preview-heading">Welcome to PLES</div>
+              <div class="preview-subtitle">Your school community at a glance</div>
 
               <div class="preview-row">
                 <span class="feature-icon mint" aria-hidden="true">
@@ -134,7 +155,7 @@
                 </span>
                 <div>
                   <strong>Attendance</strong>
-                  <span>Mark today’s class</span>
+                  <span>Stay up to date</span>
                 </div>
               </div>
 
@@ -147,7 +168,7 @@
                 </span>
                 <div>
                   <strong>Advising</strong>
-                  <span>Request academic advising</span>
+                  <span>Get school guidance</span>
                 </div>
               </div>
 
@@ -155,7 +176,7 @@
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M7 18a4 4 0 0 1 0-8 5.5 5.5 0 0 1 10.6 1.3A3.4 3.4 0 0 1 17 18z"></path>
                 </svg>
-                School updates at a glance
+                Learning support for every student
               </div>
             </div>
           </div>
@@ -169,10 +190,10 @@
       <main>
         <section class="section features-section" id="features">
           <div class="container">
-            <h2>Two tools, one connected system</h2>
+            <h2>Tools for learning and staying connected</h2>
             <p class="section-lead">
-              Everything a pre-school or elementary school needs to track,
-              support and guide its learners, in one place.
+              Find the right support for your role, from school updates to
+              practical ways to build good study habits.
             </p>
 
             <div class="feature-grid">
@@ -203,6 +224,35 @@
                   without the back-and-forth.
                 </p>
               </article>
+
+              <article class="feature-card">
+                <span class="feature-icon mint" aria-hidden="true">✧</span>
+                <h3>Tutor management</h3>
+                <p>
+                  Students can find guidance on asking their teacher or school
+                  office about tutoring support. Tutor listings and bookings
+                  are not available in this demo yet.
+                </p>
+              </article>
+
+              <article class="feature-card">
+                <span class="feature-icon sun" aria-hidden="true">◷</span>
+                <h3>Study session guidance</h3>
+                <p>
+                  A simple focus-and-break routine helps students plan study
+                  time and review what they have learned.
+                </p>
+              </article>
+
+              <article class="feature-card">
+                <span class="feature-icon coral" aria-hidden="true">?</span>
+                <h3>Parent and student help</h3>
+                <p>
+                  Ask the in-portal FAQ helper about registration, attendance,
+                  tutoring and school events. Answers are prepared and do not
+                  use an external AI service.
+                </p>
+              </article>
             </div>
           </div>
         </section>
@@ -216,8 +266,8 @@
                 <span class="step-number">1</span>
                 <h3>Register</h3>
                 <p>
-                  Create a role-based portal account. Registration is its own
-                  step, separate from logging in.
+                  Create an account for your role. Parents do not need a child
+                  link code to register.
                 </p>
               </article>
 
@@ -233,22 +283,46 @@
                 <span class="step-number">3</span>
                 <h3>Stay in sync</h3>
                 <p>
-                  School updates and attendance appear in the
-                  relevant role-based portal.
+                  Students go to their portal after successful registration.
+                  School approval may still be needed for some features.
                 </p>
               </article>
             </div>
           </div>
         </section>
 
-        <section class="section start-section" id="start">
+        <section class="section start-section" id="portals">
           <div class="container">
-            <h2>Open your school portal</h2>
+            <h2>Choose your school portal</h2>
             <p class="section-lead">
-              Login and registration options for teachers, parents and students
-              are available in the menu.
+              Sign in to your portal or create an account for your role.
             </p>
-            <button class="button button-navy" type="button" data-open-menu>Open portal menu</button>
+            <div class="start-grid">
+              <article class="choice-card">
+                <h3>Student</h3>
+                <p>Open your learning portal, study guidance and school updates.</p>
+                <div class="role-actions">
+                  <a class="button button-navy" href="login.html?role=student">Student log in</a>
+                  <a class="button button-navy" href="register.html?role=student">Create student account</a>
+                </div>
+              </article>
+              <article class="choice-card">
+                <h3>Parent</h3>
+                <p>Access the parent portal and get quick answers to common questions.</p>
+                <div class="role-actions">
+                  <a class="button button-navy" href="login.html?role=parent">Parent log in</a>
+                  <a class="button button-navy" href="register.html?role=parent">Create parent account</a>
+                </div>
+              </article>
+              <article class="choice-card">
+                <h3>Teacher</h3>
+                <p>Manage attendance, advising and school announcements.</p>
+                <div class="role-actions">
+                  <a class="button button-navy" href="login.html?role=teacher">Teacher log in</a>
+                  <a class="button button-navy" href="register.html?role=teacher">Create teacher account</a>
+                </div>
+              </article>
+            </div>
           </div>
         </section>
 
@@ -356,19 +430,11 @@
           </svg>
           <span>Home</span>
         </a>
-        <a href="#attendance">
+        <a href="#portals">
           <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="9"></circle>
-            <path d="m8 12.5 2.7 2.7L16 9.5"></path>
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM20 8v6M23 11h-6"></path>
           </svg>
-          <span>Attendance</span>
-        </a>
-        <a href="#advising">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <rect x="4" y="5" width="16" height="15" rx="3"></rect>
-            <path d="M8 3v4M16 3v4M4 10h16"></path>
-          </svg>
-          <span>Advising</span>
+          <span>Portals</span>
         </a>
         <a href="#feedback">
           <svg viewBox="0 0 24 24" aria-hidden="true">

@@ -50,10 +50,24 @@
         </header>
 
         <main class="content">
-          <p class="demo-banner" role="note">Demo limitation: sign-in and account profiles use Supabase, but attendance, student photos in dashboard views, events, and other portal records still use this browser. Do not enter real student data.</p>
+          <p class="demo-banner" role="note">Demo notice: Supabase stores sign-in, student registration and approval, student photos, attendance, and academic advising. Parent accounts are not connected to student profiles. School events and notifications are stored only in this browser. Use demo data only; do not enter real student information.</p>
           <section class="panel notification-panel" id="notification-panel" hidden>
             <div class="panel-heading"><div><h3>Notifications</h3><p>Recent updates for your portal</p></div><button id="close-notifications" class="link-btn" type="button">Close</button></div>
             <div id="notification-list" class="event-list"></div>
+          </section>
+          <section class="panel help-assistant" id="help-assistant" hidden>
+            <div class="panel-heading"><div><h3>PLES Help Chat</h3><p>Quick answers for parents and students</p></div></div>
+            <p class="help-disclaimer">This FAQ helper uses prepared school answers and does not send messages to an external AI service.</p>
+            <div class="help-chat-log" id="help-chat-log" role="log" aria-live="polite">
+              <p class="help-message">assistant: Hi! Ask me about registration, tutoring, study sessions, attendance, advising, or school events.</p>
+            </div>
+            <form class="help-chat-form" id="help-chat-form">
+              <label for="help-chat-input">Your question</label>
+              <div class="help-chat-entry">
+                <input id="help-chat-input" name="question" type="text" maxlength="300" placeholder="How can I find a tutor?" required />
+                <button class="btn" type="submit">Ask</button>
+              </div>
+            </form>
           </section>
 
           <section id="teacher-home" class="view" hidden>
@@ -65,12 +79,19 @@
               <a class="quick-card" href="#advising"><span class="quick-icon">✦</span><strong>Advising requests</strong><span id="pending-count">Review pending requests</span></a>
               <a class="quick-card" href="#attendance"><span class="quick-icon">✓</span><strong>Attendance</strong><span>Record today’s attendance</span></a>
             </div>
-            <h3>Connected students</h3>
+            <h3>Students assigned to you</h3>
             <div class="student-grid" id="teacher-students"></div>
+            <section class="panel teacher-registrations-panel" id="teacher-registrations-panel" hidden>
+              <div class="panel-heading">
+                <div><h3>Student registrations to review</h3><p>Pending registrations and approved, unassigned students appear here.</p></div>
+                <a class="btn btn-secondary" href="#admin">Review registrations</a>
+              </div>
+              <div class="student-grid" id="teacher-pending-students"></div>
+            </section>
             <div class="dashboard-columns">
               <section class="panel"><div class="panel-heading"><div><h3>Upcoming events</h3><p>School calendar</p></div><a href="#events">View calendar</a></div><div id="teacher-events" class="event-list"></div></section>
             </div>
-            <section class="panel admin-entry">
+            <section class="panel admin-entry" id="admin-entry" hidden>
               <div><span class="eyebrow">Teacher workspace</span><h3>School administration</h3><p>Manage school events and announcements.</p></div>
               <a class="btn btn-secondary" href="#admin">Open admin tools</a>
             </section>
@@ -83,18 +104,20 @@
           </section>
 
           <section id="attendance" class="view" hidden>
-            <h2>Attendance tracking</h2><p class="lead">Record each connected learner’s attendance.</p>
+            <h2>Attendance tracking</h2><p class="lead">Record attendance for students approved and assigned to your account.</p>
+            <p class="status-copy" id="attendance-registration-note" hidden>Pending registrations appear by name below for teachers. Attendance can be recorded after a student is approved and assigned to your roster.</p>
             <label class="filter-label" for="semester-filter">Attendance timeline</label>
             <select id="semester-filter" class="semester-filter">
               <option value="1">1st Semester</option><option value="2">2nd Semester</option>
               <option value="3">3rd Semester</option><option value="4">4th Semester</option>
             </select>
             <p id="summary" class="summary" role="status"></p>
+            <p id="attendance-feedback" class="form-feedback" role="status"></p>
             <ul id="roster" class="list"></ul>
           </section>
 
           <section id="parent" class="view" hidden>
-            <div class="section-heading"><div><h2>Guardian Stays</h2><p class="lead">Your child’s school day, academic standing and teacher updates.</p></div></div>
+            <div class="section-heading"><div><h2>Guardian</h2><p class="lead">Your child’s school day, academic standing and teacher updates.</p></div></div>
             <div id="parent-child" class="card child-profile"></div>
             <div class="parent-grid">
               <section class="panel"><h3>Attendance</h3><p id="parent-attendance" class="status-copy"></p><label class="filter-label" for="parent-semester">Attendance timeline</label><select id="parent-semester" class="semester-filter"><option value="1">1st Semester</option><option value="2">2nd Semester</option><option value="3">3rd Semester</option><option value="4">4th Semester</option></select><ul id="week" class="week"></ul></section>
@@ -109,7 +132,7 @@
                 <button class="btn" type="submit">Send request</button>
               </form>
             </section>
-            <section class="panel"><div class="panel-heading"><div><h3>Upcoming events</h3><p>Only updates for your linked child</p></div></div><div id="parent-events" class="event-list"></div></section>
+            <section class="panel"><div class="panel-heading"><div><h3>Upcoming events</h3><p>School calendar updates</p></div></div><div id="parent-events" class="event-list"></div></section>
           </section>
 
           <section id="student" class="view" hidden>
@@ -117,12 +140,16 @@
             <div class="quick-grid">
               <a class="quick-card" href="#advising"><span class="quick-icon">✦</span><strong>Academic advising</strong><span>Check appointment requests</span></a>
               <a class="quick-card" href="#events"><span class="quick-icon">▦</span><strong>School calendar</strong><span>View events and announcements</span></a>
+              <a class="quick-card" href="#tutors"><span class="quick-icon">✧</span><strong>Tutor management</strong><span>Learn how to find tutoring support</span></a>
+              <a class="quick-card" href="#study-sessions"><span class="quick-icon">◷</span><strong>Study sessions</strong><span>Build a simple study routine</span></a>
             </div>
-            <section class="panel"><h3>My attendance</h3><p id="student-attendance" class="status-copy"></p></section>
-            <section class="panel student-link-panel" id="student-link-panel" hidden>
-              <h3>Link a parent to your profile</h3>
-              <p>Share this private link code with your parent or guardian so they can link to your school profile.</p>
-              <code id="student-link-code"></code>
+            <section class="panel"><h3>My attendance</h3><label class="filter-label" for="student-semester-filter">Attendance timeline</label><select id="student-semester-filter" class="semester-filter"><option value="1">1st Semester</option><option value="2">2nd Semester</option><option value="3">3rd Semester</option><option value="4">4th Semester</option></select><p id="student-attendance" class="status-copy"></p></section>
+            <section class="panel" id="student-registration-panel" hidden>
+              <h3>Student registration</h3>
+              <p id="student-approval-status" class="status-copy"></p>
+              <div class="student-link-details">
+                <div><strong>Student ID</strong><code id="student-school-id"></code></div>
+              </div>
             </section>
             <section class="panel advising-request-panel">
               <h3>Request academic advising</h3>
@@ -131,8 +158,31 @@
                 <label>Preferred time<input name="time" type="time" required /></label>
                 <label>What would you like to discuss?<input name="message" minlength="3" required /></label>
                 <button class="btn" type="submit">Send request</button>
+                <p id="student-advising-feedback" class="form-feedback" role="status" hidden></p>
               </form>
+              <p id="student-advising-status" class="status-copy" hidden></p>
             </section>
+          </section>
+
+          <section id="tutors" class="view" hidden>
+            <h2>Tutor management</h2>
+            <p class="lead">Find out how to get learning support from your school.</p>
+            <section class="panel">
+              <h3>Getting tutoring support</h3>
+              <p class="status-copy">Ask your teacher or school office which tutors are available for your subject. Tutor listings and bookings are not connected to this demo portal yet.</p>
+              <button class="btn help-prompt-button" type="button" data-help-prompt="How do I find a tutor?">Ask the help chat about tutors</button>
+            </section>
+          </section>
+
+          <section id="study-sessions" class="view" hidden>
+            <h2>Study sessions</h2>
+            <p class="lead">Use this simple routine to make study time easier to manage.</p>
+            <div class="study-plan-grid">
+              <article class="panel"><span class="study-step">1</span><h3>Choose one goal</h3><p class="status-copy">Pick one subject or assignment to focus on for this session.</p></article>
+              <article class="panel"><span class="study-step">2</span><h3>Focus, then pause</h3><p class="status-copy">Study for 25 minutes, take a 5-minute break, and repeat if you have time.</p></article>
+              <article class="panel"><span class="study-step">3</span><h3>Review your progress</h3><p class="status-copy">Write down what you finished and what you want to ask your teacher.</p></article>
+            </div>
+            <button class="btn help-prompt-button" type="button" data-help-prompt="How can I plan a study session?">Ask the help chat about study sessions</button>
           </section>
 
           <section id="events" class="view" hidden>
@@ -141,7 +191,12 @@
           </section>
 
           <section id="admin" class="view" hidden>
-            <h2>School administration</h2><p class="lead">Create and publish school events and announcements.</p>
+            <h2>Teacher tools</h2><p class="lead">Approve pending students to your roster and manage school announcements.</p>
+            <section class="panel" id="student-approvals-panel" hidden>
+              <div class="panel-heading"><div><h3>Student approval access</h3><p>Review new student registrations and select students to add to your roster.</p></div><button class="link-btn" id="refresh-student-approvals" type="button">Refresh registrations</button></div>
+              <p class="status-copy">Approving a student assigns them to your teacher roster. Only school administrators can reject registrations.</p>
+              <div id="pending-student-approvals" class="approval-list"></div>
+            </section>
             <form id="event-form" class="card form-row admin-form">
               <label>Post type<select name="type" required><option value="event">School event</option><option value="announcement">Announcement</option></select></label>
               <label>Title<input name="title" minlength="3" required /></label>

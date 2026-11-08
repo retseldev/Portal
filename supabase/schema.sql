@@ -18,6 +18,23 @@ create table if not exists public.profiles (
   constraint school_admin_is_teacher check (not is_school_admin or role = 'teacher')
 );
 
+alter table public.profiles
+  add column if not exists is_school_admin boolean not null default false;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'school_admin_is_teacher'
+      and conrelid = 'public.profiles'::regclass
+  ) then
+    alter table public.profiles
+      add constraint school_admin_is_teacher
+      check (not is_school_admin or role = 'teacher');
+  end if;
+end;
+$$;
+
 create table if not exists public.login_events (
   id uuid primary key default extensions.gen_random_uuid(),
   user_id uuid not null references public.profiles (id) on delete cascade,
@@ -34,8 +51,27 @@ create table if not exists public.students (
   photo_path text not null,
   academic_standing text,
   teacher_feedback text,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  approval_status text not null default 'pending',
+  constraint students_approval_status_check check (approval_status in ('pending', 'approved', 'rejected'))
 );
+
+alter table public.students
+  add column if not exists approval_status text not null default 'approved';
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'students_approval_status_check'
+      and conrelid = 'public.students'::regclass
+  ) then
+    alter table public.students
+      add constraint students_approval_status_check
+      check (approval_status in ('pending', 'approved', 'rejected'));
+  end if;
+end;
+$$;
 
 create table if not exists public.parent_student_links (
   parent_id uuid not null references public.profiles (id) on delete cascade,
@@ -139,11 +175,11 @@ as $$
     where s.id = target_student_id
       and (
         s.profile_id = auth.uid()
-        or s.teacher_id = auth.uid()
-        or exists (
-          select 1
-          from public.parent_student_links l
-          where l.student_id = s.id and l.parent_id = auth.uid()
+        or (
+          s.approval_status = 'approved'
+          and (
+            s.teacher_id = auth.uid()
+          )
         )
       )
   );
@@ -175,6 +211,120 @@ as $$
   );
 $$;
 
+create or replace function public.list_school_teachers()
+returns table (id uuid, display_name text)
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  if not public.is_school_admin() then
+    raise exception 'Only a school administrator can list teachers for assignment';
+  end if;
+
+  return query
+  select p.id, p.display_name
+  from public.profiles p
+  where p.role = 'teacher'
+  order by p.display_name;
+end;
+$$;
+
+drop function if exists public.approve_student_registration(uuid, uuid);
+
+create or replace function public.approve_student_registration(target_student_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  if not public.is_teacher() then
+    raise exception 'Only a teacher can approve student registrations';
+  end if;
+
+  update public.students
+  set approval_status = 'approved',
+      teacher_id = auth.uid()
+  where id = target_student_id
+    and (
+      approval_status = 'pending'
+      or (approval_status = 'approved' and teacher_id is null)
+    );
+
+  if not found then
+    raise exception 'This student is no longer available to assign; refresh the list and try again';
+  end if;
+end;
+$$;
+
+create or replace function public.reject_student_registration(target_student_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  target_profile_id uuid;
+begin
+  if not public.is_school_admin() then
+    raise exception 'Only a school administrator can reject student registrations';
+  end if;
+
+  select profile_id
+  into target_profile_id
+  from public.students
+  where id = target_student_id
+    and approval_status = 'pending'
+  for update;
+
+  if target_profile_id is null then
+    raise exception 'This student registration is no longer pending review';
+  end if;
+
+  delete from public.advising_requests
+  where requester_id = target_profile_id;
+
+  delete from auth.users
+  where id = target_profile_id;
+
+  if not found then
+    raise exception 'The student account could not be deleted';
+  end if;
+end;
+$$;
+
+create or replace function public.cancel_incomplete_student_registration()
+returns void
+language plpgsql
+security definer
+set search_path = public, auth, pg_temp
+as $$
+begin
+  if not exists (
+    select 1 from public.profiles p
+    where p.id = auth.uid() and p.role = 'student'
+  ) then
+    raise exception 'An authenticated student account is required';
+  end if;
+
+  if exists (
+    select 1 from public.students s
+    where s.profile_id = auth.uid()
+      and s.approval_status <> 'pending'
+  ) then
+    raise exception 'Only an incomplete pending student registration can be removed';
+  end if;
+
+  delete from auth.users
+  where id = auth.uid();
+
+  if not found then
+    raise exception 'The incomplete student account could not be removed';
+  end if;
+end;
+$$;
+
 create or replace function public.record_portal_login()
 returns void
 language plpgsql
@@ -193,71 +343,9 @@ begin
 end;
 $$;
 
-create or replace function public.create_parent_link_invite(target_student_id uuid)
-returns text
-language plpgsql
-security definer
-set search_path = public, pg_temp
-as $$
-declare
-  invite_code text;
-begin
-  if not exists (
-    select 1 from public.students s
-    where s.id = target_student_id and s.profile_id = auth.uid()
-  ) then
-    raise exception 'Only the student account owner can create a parent link code';
-  end if;
-
-  invite_code := encode(extensions.gen_random_bytes(18), 'hex');
-  insert into public.parent_link_invites (student_id, code_hash, expires_at)
-  values (target_student_id, extensions.digest(invite_code, 'sha256'), now() + interval '7 days');
-  return invite_code;
-end;
-$$;
-
+drop function if exists public.create_parent_link_invite(uuid);
+drop function if exists public.link_child_profile(text, text, text);
 drop function if exists public.link_child_profile(text, text);
-create or replace function public.link_child_profile(
-  target_student_code text,
-  target_student_name text,
-  invite_code text
-)
-returns uuid
-language plpgsql
-security definer
-set search_path = public, pg_temp
-as $$
-declare
-  matched_student_id uuid;
-  matched_invite_id uuid;
-begin
-  if not exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.role = 'parent'
-  ) then
-    raise exception 'A parent account is required to link a student';
-  end if;
-
-  select s.id, i.id into matched_student_id, matched_invite_id
-  from public.students s
-  join public.parent_link_invites i on i.student_id = s.id
-  where s.student_code = target_student_code
-    and lower(trim(s.display_name)) = lower(trim(target_student_name))
-    and i.expires_at > now()
-    and i.code_hash = extensions.digest(invite_code, 'sha256');
-
-  if matched_student_id is null then
-    raise exception 'The student code or parent link code is invalid or expired';
-  end if;
-
-  insert into public.parent_student_links (parent_id, student_id)
-  values (auth.uid(), matched_student_id)
-  on conflict do nothing;
-
-  delete from public.parent_link_invites where id = matched_invite_id;
-  return matched_student_id;
-end;
-$$;
 
 alter table public.profiles enable row level security;
 alter table public.login_events enable row level security;
@@ -270,8 +358,9 @@ alter table public.school_posts enable row level security;
 alter table public.feedback enable row level security;
 
 grant usage on schema public to anon, authenticated;
-grant select on public.profiles, public.students, public.parent_student_links,
+grant select on public.profiles, public.students,
   public.attendance, public.advising_requests to authenticated;
+revoke all on public.parent_student_links, public.parent_link_invites from public, anon, authenticated;
 grant select on public.login_events to authenticated;
 grant insert on public.students, public.attendance, public.advising_requests to authenticated;
 grant delete on public.students to authenticated;
@@ -299,11 +388,26 @@ drop policy if exists "students_read_linked" on public.students;
 create policy "students_read_linked" on public.students
   for select to authenticated using (public.can_access_student(id));
 
+drop policy if exists "students_read_admin" on public.students;
+create policy "students_read_admin" on public.students
+  for select to authenticated using (public.is_school_admin());
+
+drop policy if exists "students_read_pending_teacher" on public.students;
+create policy "students_read_pending_teacher" on public.students
+  for select to authenticated using (
+    public.is_teacher()
+    and (
+      approval_status = 'pending'
+      or (approval_status = 'approved' and teacher_id is null)
+    )
+  );
+
 drop policy if exists "students_create_self" on public.students;
 create policy "students_create_self" on public.students
   for insert to authenticated with check (
     profile_id = auth.uid()
     and teacher_id is null
+    and approval_status = 'pending'
     and exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'student')
   );
 
@@ -316,14 +420,16 @@ create policy "students_delete_self" on public.students
 
 drop policy if exists "students_update_assigned_teacher" on public.students;
 create policy "students_update_assigned_teacher" on public.students
-  for update to authenticated using (teacher_id = auth.uid() and public.is_teacher())
-  with check (teacher_id = auth.uid() and public.is_teacher());
+  for update to authenticated using (
+    approval_status = 'approved' and teacher_id = auth.uid() and public.is_teacher()
+  )
+  with check (
+    approval_status = 'approved' and teacher_id = auth.uid() and public.is_teacher()
+  );
 revoke update on public.students from public, anon, authenticated;
 grant update (academic_standing, teacher_feedback) on public.students to authenticated;
 
 drop policy if exists "parent_links_read_own" on public.parent_student_links;
-create policy "parent_links_read_own" on public.parent_student_links
-  for select to authenticated using (parent_id = auth.uid());
 
 drop policy if exists "attendance_read_linked" on public.attendance;
 create policy "attendance_read_linked" on public.attendance
@@ -344,7 +450,8 @@ create policy "advising_read_linked" on public.advising_requests
   for select to authenticated using (public.can_access_student(student_id));
 
 drop policy if exists "advising_request_as_parent" on public.advising_requests;
-create policy "advising_request_as_parent" on public.advising_requests
+drop policy if exists "advising_request_as_student" on public.advising_requests;
+create policy "advising_request_as_student" on public.advising_requests
   for insert to authenticated with check (
     requester_id = auth.uid()
     and status = 'Pending'
@@ -352,13 +459,9 @@ create policy "advising_request_as_parent" on public.advising_requests
     and exists (
       select 1 from public.students s
       where s.id = advising_requests.student_id
-        and (
-          s.profile_id = auth.uid()
-          or exists (
-            select 1 from public.parent_student_links l
-            where l.parent_id = auth.uid() and l.student_id = s.id
-          )
-        )
+        and s.profile_id = auth.uid()
+        and s.approval_status = 'approved'
+        and s.teacher_id is not null
     )
   );
 
@@ -396,8 +499,10 @@ create policy "feedback_submit_public" on public.feedback
     and (name is null or length(trim(name)) <= 100)
   );
 
-revoke all on function public.create_parent_link_invite(uuid) from public;
-revoke all on function public.link_child_profile(text, text, text) from public;
+revoke all on function public.list_school_teachers() from public;
+revoke all on function public.approve_student_registration(uuid) from public;
+revoke all on function public.reject_student_registration(uuid) from public;
+revoke all on function public.cancel_incomplete_student_registration() from public;
 revoke all on function public.record_portal_login() from public;
 revoke all on function public.can_access_student(uuid) from public;
 revoke all on function public.is_school_admin() from public;
@@ -405,8 +510,10 @@ revoke all on function public.is_teacher() from public;
 grant execute on function public.can_access_student(uuid) to authenticated;
 grant execute on function public.is_school_admin() to authenticated;
 grant execute on function public.is_teacher() to authenticated;
-grant execute on function public.create_parent_link_invite(uuid) to authenticated;
-grant execute on function public.link_child_profile(text, text, text) to authenticated;
+grant execute on function public.list_school_teachers() to authenticated;
+grant execute on function public.approve_student_registration(uuid) to authenticated;
+grant execute on function public.reject_student_registration(uuid) to authenticated;
+grant execute on function public.cancel_incomplete_student_registration() to authenticated;
 grant execute on function public.record_portal_login() to authenticated;
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
@@ -423,7 +530,17 @@ create policy "student_photos_read_linked" on storage.objects
     and exists (
       select 1 from public.students s
       where s.id::text = (storage.foldername(name))[1]
-        and public.can_access_student(s.id)
+        and (
+          public.can_access_student(s.id)
+          or public.is_school_admin()
+          or (
+            public.is_teacher()
+            and (
+              s.approval_status = 'pending'
+              or (s.approval_status = 'approved' and s.teacher_id is null)
+            )
+          )
+        )
     )
   );
 
@@ -437,3 +554,61 @@ create policy "student_photos_upload_owner" on storage.objects
         and s.profile_id = auth.uid()
     )
   );
+
+drop policy if exists "student_photos_delete_pending_admin" on storage.objects;
+create policy "student_photos_delete_pending_admin" on storage.objects
+  for delete to authenticated using (
+    bucket_id = 'student-photos'
+    and public.is_school_admin()
+    and exists (
+      select 1 from public.students s
+      where s.id::text = (storage.foldername(name))[1]
+        and s.approval_status = 'pending'
+    )
+  );
+
+drop policy if exists "student_photos_delete_pending_owner" on storage.objects;
+create policy "student_photos_delete_pending_owner" on storage.objects
+  for delete to authenticated using (
+    bucket_id = 'student-photos'
+    and exists (
+      select 1 from public.students s
+      where s.id::text = (storage.foldername(name))[1]
+        and s.profile_id = auth.uid()
+        and s.approval_status = 'pending'
+    )
+  );
+
+do $$
+begin
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
+     and not exists (
+       select 1 from pg_publication_tables
+       where pubname = 'supabase_realtime'
+         and schemaname = 'public'
+         and tablename = 'students'
+     ) then
+    alter publication supabase_realtime add table public.students;
+  end if;
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
+     and not exists (
+       select 1 from pg_publication_tables
+       where pubname = 'supabase_realtime'
+         and schemaname = 'public'
+         and tablename = 'attendance'
+     ) then
+    alter publication supabase_realtime add table public.attendance;
+  end if;
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
+     and not exists (
+       select 1 from pg_publication_tables
+       where pubname = 'supabase_realtime'
+         and schemaname = 'public'
+         and tablename = 'advising_requests'
+     ) then
+    alter publication supabase_realtime add table public.advising_requests;
+  end if;
+end;
+$$;
+
+notify pgrst, 'reload schema';
