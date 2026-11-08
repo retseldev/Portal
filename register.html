@@ -22,7 +22,7 @@
         <div class="auth-card">
           <div class="auth-topline"><a href="index.html">← Back to home</a><a class="brand auth-brand" href="index.html" aria-label="PLES home"><img class="school-logo" src="school-logo.png" alt="" /><span>PLES</span></a></div>
           <h2 id="form-title">Create your account</h2>
-          <p class="intro" id="form-intro">Create a portal account.</p>
+          <p class="intro" id="form-intro">Create a portal account. Parent accounts do not need a child link code.</p>
           <form class="demo-form" id="account-form" data-mode="register">
             <input id="account-role" name="role" type="hidden" />
             <label for="register-name">Your name</label>
@@ -35,15 +35,6 @@
               <label for="student-photo">Upload 2x2 Photo (required)</label>
               <input id="student-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" />
               <p class="field-help">Choose a clear, square profile photo. It will only appear inside the parent and teacher portals.</p>
-            </div>
-            <div class="role-fields" id="parent-fields" hidden>
-              <label for="child-name">Child’s full name</label>
-              <input id="child-name" name="childName" autocomplete="off" placeholder="Your child’s full name" minlength="2" />
-              <label for="child-id">Child’s Student ID</label>
-              <input id="child-id" name="childId" autocomplete="off" placeholder="Your child’s student ID" minlength="3" />
-              <label for="child-link-code">Child’s parent link code</label>
-              <input id="child-link-code" name="childLinkCode" autocomplete="off" placeholder="Private code from your child" minlength="12" />
-              <p class="field-help">Enter the student’s exact name and ID, plus the private parent link code shared from their school account.</p>
             </div>
             <label for="register-password">Create a password</label>
             <div class="password-field">

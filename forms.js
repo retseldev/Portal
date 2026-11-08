@@ -3,13 +3,29 @@ import { supabase } from "./supabase-client.js";
 const accountForm = document.querySelector("#account-form");
 const search = new URLSearchParams(window.location.search);
 const allowedRoles = ["teacher", "parent", "student"];
-const selectedRole = allowedRoles.includes(search.get("role")) ? search.get("role") : "teacher";
+const requestedRole = search.get("role");
+const hasSelectedRole = allowedRoles.includes(requestedRole);
+const selectedRole = hasSelectedRole ? requestedRole : "teacher";
 function setSuccess(form, message, isError = false) {
   const notice = form.querySelector(".form-success");
   if (!notice) return;
   notice.textContent = message;
   notice.hidden = false;
   notice.classList.toggle("is-error", isError);
+}
+
+function getAccountErrorMessage(error) {
+  const message = String(error?.message || "");
+  if (/cancel_incomplete_student_registration/i.test(message)) {
+    return "Student registration setup is incomplete. Ask your project administrator to apply supabase/migrations/20261106160000_student_registration_sync.sql in the SQL Editor for the project configured in supabase-config.js, then try again.";
+  }
+  if (/approval_status/i.test(message) && /(column|schema cache|PGRST204|42703)/i.test(message)) {
+    return "Student registration is missing the approval_status column in Supabase. Ask the project administrator to run supabase/migrations/20261106150000_add_students_approval_status.sql in the SQL Editor for the project configured in supabase-config.js, wait for the schema cache to reload, then try again. If it was already applied, verify that supabase-config.js points to that same project.";
+  }
+  if (/failed to fetch|networkerror|load failed/i.test(message)) {
+    return "Could not connect to Supabase. Check your internet connection and confirm the project URL and public key in supabase-config.js are correct.";
+  }
+  return message || "The online account operation failed. Please try again.";
 }
 
 function setRequired(selector, required) {
@@ -19,27 +35,26 @@ function setRequired(selector, required) {
 
 function showRoleForm() {
   if (!accountForm) return;
+  if (accountForm.dataset.mode === "login" && !hasSelectedRole) {
+    window.location.replace("index.html");
+    return;
+  }
   const roleField = document.querySelector("#account-role");
   roleField.value = selectedRole;
   const isRegister = accountForm.dataset.mode === "register";
   const titles = {
     teacher: ["Teacher", "Create a teacher account with your school email."],
-    parent: ["Parent", "Create an account and link your child’s student profile."],
-    student: ["Student", "Create a student account and upload a profile photo."],
+    parent: ["Parent", "Create a parent portal account. No child link code or student connection is required."],
+    student: ["Student", "Register and go straight to your Student Portal. School approval may still be needed for some features."],
   };
   const [roleName, intro] = titles[selectedRole];
   document.querySelector("#form-title").textContent = isRegister ? `Register as ${roleName}` : `Log in as ${roleName}`;
   document.querySelector("#form-intro").textContent = isRegister ? intro : `Sign in to your ${roleName.toLowerCase()} portal.`;
   document.querySelector("#submit-label").textContent = isRegister ? `Register as ${roleName}` : `Log in as ${roleName}`;
   const studentFields = document.querySelector("#student-fields");
-  const parentFields = document.querySelector("#parent-fields");
   if (studentFields) studentFields.hidden = !isRegister || selectedRole !== "student";
-  if (parentFields) parentFields.hidden = !isRegister || selectedRole !== "parent";
   setRequired("#student-id", isRegister && selectedRole === "student");
   setRequired("#student-photo", isRegister && selectedRole === "student");
-  setRequired("#child-name", isRegister && selectedRole === "parent");
-  setRequired("#child-id", isRegister && selectedRole === "parent");
-  setRequired("#child-link-code", isRegister && selectedRole === "parent");
   const registerLink = document.querySelector("#register-link");
   if (registerLink) registerLink.href = `register.html?role=${selectedRole}`;
   const loginLink = document.querySelector("#login-link");
@@ -82,67 +97,74 @@ function savePortalUser(user, form) {
   return true;
 }
 
+function goToPortal(role) {
+  window.location.href = role === "student" ? "dashboard.html#student" : "dashboard.html";
+}
+
 async function registerAccount(data, form) {
   const email = String(data.get("email")).trim().toLowerCase();
   const name = String(data.get("name")).trim();
   const password = String(data.get("password"));
   const photo = selectedRole === "student" ? await validateSquarePhoto(data.get("photo")) : null;
-  const childName = selectedRole === "parent" ? String(data.get("childName")).trim() : "";
   const options = { data: { role: selectedRole, name } };
   const { data: authData, error } = await supabase.auth.signUp({ email, password, options });
   if (error) throw error;
   if (!authData.user) throw new Error("Supabase did not return the new account. Please try again.");
   if (!authData.session) {
-    throw new Error("Your account was created, but email confirmation is enabled, so student photo upload or parent linking could not finish. Ask the Supabase project administrator to remove this incomplete account, disable email confirmation for the school demo, then register again.");
+    if (authData.user.identities?.length === 0) {
+      throw new Error("An account with this email already exists. Log in with that account instead.");
+    }
+    throw new Error("Supabase created the account but did not sign it in, so the student profile and photo were not submitted for approval. For this school demo, the administrator must disable email confirmation in Supabase before student registration can finish.");
   }
 
-  const portalUser = { role: selectedRole, name, studentId: "", childId: "", linkCode: "" };
+  const portalUser = { role: selectedRole, name, studentId: "" };
   if (selectedRole === "student") {
     const studentCode = String(data.get("studentId")).trim();
     const studentId = crypto.randomUUID();
     const extension = photo.type === "image/png" ? "png" : photo.type === "image/webp" ? "webp" : "jpg";
     const photoPath = `${studentId}/${crypto.randomUUID()}.${extension}`;
-    const { error: insertError } = await supabase.from("students").insert({
-      id: studentId,
-      profile_id: authData.user.id,
-      student_code: studentCode,
-      display_name: name,
-      photo_path: photoPath,
-    });
-    if (insertError) throw insertError;
+    try {
+      const { error: insertError } = await supabase.from("students").insert({
+        id: studentId,
+        profile_id: authData.user.id,
+        student_code: studentCode,
+        display_name: name,
+        photo_path: photoPath,
+        approval_status: "pending",
+      });
+      if (insertError) throw insertError;
 
-    const { error: uploadError } = await supabase.storage
-      .from("student-photos")
-      .upload(photoPath, photo, { contentType: photo.type, upsert: false });
-    if (uploadError) {
-      const { error: cleanupError } = await supabase.from("students").delete().eq("id", studentId);
-      if (cleanupError) {
-        console.error("Unable to remove the incomplete student profile.", cleanupError);
+      const { error: uploadError } = await supabase.storage
+        .from("student-photos")
+        .upload(photoPath, photo, { contentType: photo.type, upsert: false });
+      if (uploadError) throw uploadError;
+    } catch (registrationError) {
+      const { error: photoCleanupError } = await supabase.storage
+        .from("student-photos")
+        .remove([photoPath]);
+      if (photoCleanupError) console.error("Unable to clean up the incomplete student photo.", photoCleanupError);
+
+      const { error: accountCleanupError } = await supabase.rpc("cancel_incomplete_student_registration");
+      if (accountCleanupError) {
+        console.error("Unable to clean up the incomplete student account.", accountCleanupError);
+        const cleanupMessage = /cancel_incomplete_student_registration|PGRST202/i.test(String(accountCleanupError.message || ""))
+          ? "The cleanup function is unavailable."
+          : `The cleanup function also failed: ${accountCleanupError.message}.`;
+        throw new Error(`Student registration failed: ${registrationError.message || "The student profile or photo could not be saved."} ${cleanupMessage} Ask your project administrator to apply supabase/migrations/20261106160000_student_registration_sync.sql in the SQL Editor for the project configured in supabase-config.js. The student portal will open after registration succeeds.`);
       }
-      throw uploadError;
+
+      const { error: signOutError } = await supabase.auth.signOut({ scope: "local" });
+      if (signOutError) console.error("Unable to clear the local session after registration cleanup.", signOutError);
+      throw registrationError;
     }
 
-    const { data: linkCode, error: inviteError } = await supabase
-      .rpc("create_parent_link_invite", { target_student_id: studentId });
-    if (inviteError) throw inviteError;
     portalUser.studentId = studentId;
     portalUser.studentCode = studentCode;
-    portalUser.linkCode = linkCode;
-  } else if (selectedRole === "parent") {
-    const studentCode = String(data.get("childId")).trim();
-    const linkCode = String(data.get("childLinkCode")).trim().toLowerCase();
-    const { data: childId, error: linkError } = await supabase
-      .rpc("link_child_profile", {
-        target_student_code: studentCode,
-        target_student_name: childName,
-        invite_code: linkCode,
-      });
-    if (linkError) throw linkError;
-    portalUser.childId = childId;
+    portalUser.studentStatus = "pending";
   }
 
   if (!savePortalUser(portalUser, form)) return;
-  window.location.href = "dashboard.html";
+  goToPortal(portalUser.role);
 }
 
 async function loginAccount(data, form) {
@@ -165,30 +187,23 @@ async function loginAccount(data, form) {
   const { error: historyError } = await supabase.rpc("record_portal_login");
   if (historyError) throw historyError;
 
-  const portalUser = { role: profile.role, name: profile.display_name, studentId: "", childId: "", linkCode: "" };
+  const portalUser = { role: profile.role, name: profile.display_name, studentId: "" };
   if (profile.role === "student") {
     const { data: student, error: studentError } = await supabase
       .from("students")
-      .select("id, student_code")
+      .select("id, student_code, approval_status")
       .eq("profile_id", profile.id)
       .maybeSingle();
     if (studentError) throw studentError;
     if (student) {
       portalUser.studentId = student.id;
       portalUser.studentCode = student.student_code;
+      portalUser.studentStatus = student.approval_status;
     }
-  } else if (profile.role === "parent") {
-    const { data: links, error: linksError } = await supabase
-      .from("parent_student_links")
-      .select("student_id")
-      .eq("parent_id", profile.id)
-      .limit(1);
-    if (linksError) throw linksError;
-    if (links?.length) portalUser.childId = links[0].student_id;
   }
 
   if (!savePortalUser(portalUser, form)) return;
-  window.location.href = "dashboard.html";
+  goToPortal(portalUser.role);
 }
 
 async function submitAccount(event) {
@@ -209,7 +224,7 @@ async function submitAccount(event) {
     }
   } catch (error) {
     console.error("Online account operation failed.", error);
-    setSuccess(form, error.message || "The online account operation failed. Please try again.", true);
+    setSuccess(form, getAccountErrorMessage(error), true);
   } finally {
     submitButton.disabled = false;
   }
